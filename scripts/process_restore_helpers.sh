@@ -14,7 +14,8 @@ restore_pane_process() {
 	local pane_index="$4"
 	local dir="$5"
 	if _process_should_be_restored "$pane_full_command" "$session_name" "$window_number" "$pane_index"; then
-		tmux switch-client -t "${session_name}:${window_number}"
+		# These two commands don't seem to be needed if addressing session:window.pane absolutely (see below)
+    tmux switch-client -t "${session_name}:${window_number}"
 		tmux select-pane -t "$pane_index"
 
 		local inline_strategy="$(_get_inline_strategy "$pane_full_command")" # might not be defined
@@ -25,18 +26,23 @@ restore_pane_process() {
 				local strategy_file="$(_get_strategy_file "$inline_strategy")"
 				local inline_strategy="$($strategy_file "$pane_full_command" "$dir")"
 			fi
-			tmux send-keys "$inline_strategy" "C-m"
+			#tmux send-keys "$inline_strategy" "C-m"
+      # address session:window.pane absolutely
+      tmux send-keys -t "${session_name}:${window_number}.${pane_index}" "$inline_strategy" "C-m"
 		elif _strategy_exists "$pane_full_command"; then
 			local strategy_file="$(_get_strategy_file "$pane_full_command")"
 			local strategy_command="$($strategy_file "$pane_full_command" "$dir")"
-			tmux send-keys "$strategy_command" "C-m"
+			#tmux send-keys "$strategy_command" "C-m"
+      # address session:window.pane absolutely
+      tmux send-keys -t "${session_name}:${window_number}.${pane_index}" "$strategy_command" "C-m"
 		else
 			# just invoke the command
-			tmux send-keys "$pane_full_command" "C-m"
+			#tmux send-keys "$pane_full_command" "C-m"
+      # address session:window.pane absolutely
+      tmux send-keys -t "${session_name}:${window_number}.${pane_index}" "$pane_full_command" "C-m"
 		fi
 	fi
 }
-
 # private functions below
 
 _process_should_be_restored() {
